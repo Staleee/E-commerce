@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple E-commerce</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+ <header>
+    <div class="container">
+      <h1 class="logo">E-commerce</h1>
+      <nav>
+        <ul>
+            <p></p>
+    
+        </ul>
+      </nav>
+    </div>
+  </header>
+  <main>
+   <section>
+      <div class="container">
+        <h1>Welcome to our Online Store</h1>
+      </div>
+    </section>
+
+    <section class="products">
+        <h2>Our Products</h2>
+        <div class="product-container" id="product-container">
+
+        </div>
+    </section>
+
+    <section class="wishlist">
+      <div class="container">
+        <h2>Wishlist</h2>
+        <ul id="wishlist-items">
+        </ul>
+      </div>
+    </section>
+
+    <section class="add-product">
+      <div class="container">
+        <button id="add-product-button" onclick="scrollToTopAndShowForm()">Add Product</button>
+        <div id="add-product-form" style="display: none;">
+          <h2>Add New Product</h2>
+          <form id="product-form" onsubmit="addProduct(event)">
+            <label for="name">Name:</label><br>
+            <input type="text" id="name" name="name"><br>
+            <label for="price">Price:</label><br>
+            <input type="text" id="price" name="price"><br>
+            <label for="stockQuantity">Stock Quantity:</label><br>
+            <input type="text" id="stockQuantity" name="stockQuantity"><br>
+            <button type="submit">Submit</button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+  <script>
+    function scrollToTopAndShowForm() {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+      const addProductForm = document.getElementById('add-product-form');
+      addProductForm.style.display = 'block';
+    }
+
+
+    function addToWishlist(productName) {
+      const wishlist = document.getElementById("wishlist-items");
+      const listItem = document.createElement("li");
+      listItem.textContent = productName;
+      wishlist.appendChild(listItem);
+    }
+
+  
+    function fetchAndDisplayProducts() {
+      fetch('/products')
+        .then(response => response.json())
+        .then(products => {
+          const productContainer = document.getElementById('product-container');
+          productContainer.innerHTML = ''; 
+          products.forEach(product => {
+            const productDiv = document.createElement('div');
+            productDiv.classList.add('product-container');
+
+            const productDetails = document.createElement('div');
+            productDetails.classList.add('product-details');
+            productDetails.innerHTML = `
+              
+              <h3>${product.Name}</h3>
+              <p>${product.Description}</p>
+              <p class="price">$${product.Price} | Quantity: ${product.StockQuantity}</p>
+              <button onclick="addToWishlist('${product.Name}')">Add to Wishlist</button>
+              <button onclick="editProduct(${product.ProductID})">Edit</button>
+              <button onclick="deleteProduct(${product.ProductID})">Delete</button>
+            `;
+
+            productDiv.appendChild(productDetails);
+            productContainer.appendChild(productDiv);
+          });
+        })
+        .catch(error => console.error('Error fetching products:', error));
+    }
+
+    fetchAndDisplayProducts();
+
+    function addProduct(event) {
+      event.preventDefault(); 
+      
+
+      const name = document.getElementById('name').value;
+      const price = document.getElementById('price').value;
+      const stockQuantity = document.getElementById('stockQuantity').value;
+
+      const productData = {
+        name: name,
+        price: price,
+        stockQuantity: stockQuantity
+      };
+
+
+      fetch('/addProduct', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(productData)
+      })
+        .then(response => {
+          if (response.ok) {
+            console.log('Product added successfully');
+            fetchAndDisplayProducts(); 
+          } else {
+            console.error('Failed to add product');
+          }
+        })
+        .catch(error => console.error('Error adding product:', error));
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      const productForm = document.getElementById('product-form');
+      productForm.addEventListener('submit', addProduct);
+    });
+
+
+    function editProduct(productID) {
+      const newName = prompt('Enter the new name for the product:');
+      if (newName !== null) {
+        fetch(`/updateProduct/${productID}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ name: newName })
+        })
+          .then(response => {
+            if (response.ok) {
+              console.log('Product updated successfully');
+              fetchAndDisplayProducts(); 
+            } else {
+              console.error('Failed to update product');
+            }
+          })
+          .catch(error => console.error('Error updating product:', error));
+      }
+    }
+
+    function deleteProduct(productID) {
+      if (confirm('Are you sure you want to delete this product?')) {
+        fetch(`/deleteProduct/${productID}`, {
+          method: 'DELETE'
+        })
+          .then(response => {
+            if (response.ok) {
+              console.log('Product deleted successfully');
+              fetchAndDisplayProducts(); 
+            } else {
+              console.error('Failed to delete product');
+            }
+          })
+          .catch(error => console.error('Error deleting product:', error));
+      }
+    }
+  </script>
+</body>
+
+</html>
